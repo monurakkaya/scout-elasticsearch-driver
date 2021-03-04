@@ -308,15 +308,7 @@ class ElasticEngine extends Engine
 
         $ids = $this->mapIds($results)->all();
 
-        $query = $model::usesSoftDelete() ? $model->withTrashed() : $model->newQuery();
-
-        $models = $query
-            ->whereIn($scoutKeyName, $ids)
-            ->when($builder->queryCallback, function ($query, $callback) {
-                return $callback($query);
-            })
-            ->get($columns)
-            ->keyBy($scoutKeyName);
+        $models = $model->getScoutModelsByIds($builder, $ids)->keyBy($scoutKeyName);
 
         $values = Collection::make($results['hits']['hits'])
             ->map(function ($hit) use ($models) {
@@ -324,7 +316,6 @@ class ElasticEngine extends Engine
 
                 if (isset($models[$id])) {
                     $model = $models[$id];
-
                     if (isset($hit['highlight'])) {
                         $model->highlight = new Highlight($hit['highlight']);
                     }
